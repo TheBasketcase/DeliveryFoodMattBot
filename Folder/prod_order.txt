@@ -1,0 +1,9 @@
+CREATE TABLE `prod_order` (
+  `Order_ID` int(11) NOT NULL,
+  `Product_ID` int(11) NOT NULL,
+  `Product_Name` varchar(45) COLLATE utf8_bin NOT NULL,
+  KEY `Product_ID_idx` (`Product_ID`),
+  KEY `order_ID_idx` (`Order_ID`),
+  CONSTRAINT `Product_ID` FOREIGN KEY (`Product_ID`) REFERENCES `products` (`Prod_ID`) ON UPDATE CASCADE,
+  CONSTRAINT `order_ID` FOREIGN KEY (`Order_ID`) REFERENCES `orders` (`Ord_ID`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;

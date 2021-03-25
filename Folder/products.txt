@@ -1,0 +1,9 @@
+CREATE TABLE `products` (
+  `Prod_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Prod_Category` varchar(45) NOT NULL,
+  `Prod_Name` varchar(100) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `Prod_Price` int(11) NOT NULL,
+  `Prod_Pic` longblob,
+  PRIMARY KEY (`Prod_ID`),
+  UNIQUE KEY `Prod_ID_UNIQUE` (`Prod_ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;

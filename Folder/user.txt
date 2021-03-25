@@ -1,0 +1,6 @@
+CREATE TABLE `users` (
+  `User_ID` int(11) NOT NULL,
+  `Nickname` varchar(45) CHARACTER SET latin1 NOT NULL,
+  PRIMARY KEY (`User_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf32 COLLATE=utf32_bin;
+SELECT * FROM deliveryfoodbotdb.products;

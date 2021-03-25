@@ -1,0 +1,10 @@
+CREATE TABLE `orders` (
+  `Ord_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `ID_User` int(11) NOT NULL,
+  `Ord_Date` date NOT NULL,
+  `Ord_Price` int(11) NOT NULL,
+  `Ord_Loc` varchar(100) CHARACTER SET latin1 DEFAULT NULL,
+  PRIMARY KEY (`Ord_ID`),
+  KEY `ID_User_idx` (`ID_User`),
+  CONSTRAINT `ID_User` FOREIGN KEY (`ID_User`) REFERENCES `users` (`User_ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;

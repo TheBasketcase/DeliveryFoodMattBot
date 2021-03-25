@@ -1,0 +1,11 @@
+CREATE TABLE `cart` (
+  `Cart_ID` int(11) NOT NULL AUTO_INCREMENT,
+  `User_ID` int(11) NOT NULL,
+  `Prod_Name` varchar(100) COLLATE utf8_bin DEFAULT NULL,
+  `Prod_Price` int(11) DEFAULT NULL,
+  `Date_of_Add` date DEFAULT NULL,
+  `Date_of_Delete` date DEFAULT NULL,
+  PRIMARY KEY (`Cart_ID`),
+  KEY `User_ID_idx` (`User_ID`),
+  CONSTRAINT `User_ID` FOREIGN KEY (`User_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
