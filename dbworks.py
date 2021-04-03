@@ -8,7 +8,7 @@ bot=telegram.Bot(token)
 mydb = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="password",
+        password=password,
         database="deliveryfoodbotdb",
         autocommit=True
         )
@@ -24,9 +24,9 @@ def userins(update,context):
     mydb.commit()
     print(mycursor.rowcount, "record(s) has been inserted.")
                     
-def addtocart(id,good,price,adddate):
-    query = "INSERT INTO cart (User_ID,Prod_Name,Prod_Price,Date_of_Add) VALUES (%s,%s,%s,%s)"
-    val = (id,good,price,adddate)
+def addtocart(id,good,price,adddate,prod_ID):
+    query = "INSERT INTO cart (User_ID,Prod_Name,Prod_Price,Date_of_Add,Prod_ID) VALUES (%s,%s,%s,%s,%s)"
+    val = (id,good,price,adddate,prod_ID)
     mycursor.execute(query,val)
     mydb.commit()
 
@@ -43,6 +43,24 @@ def show_price(product):
     myresult = mycursor.fetchone()
     price = myresult[0]
     return price
+
+def show_ID(product):
+    query = "SELECT Prod_ID FROM products WHERE Prod_Name LIKE %s"
+    mycursor.execute(query,("%" + product + "%",))
+    myresult = mycursor.fetchone()
+    id = myresult[0]
+    return id
+
+def show_ord(product,id):
+    query = "SELECT * from prod_order WHERE Order_ID LIKE %s"
+    mycursor.execute(query,("%" + product + "%",))
+    myresult = mycursor.fetchall()
+    for i in myresult:
+        for n in range(0,5):
+            if (n == 3):
+                bot.send_message(id,i[3])
+            if (n == 4):
+                bot.send_message(id,"Цена товара: " + str(i[4]) + " руб.")
     
 def delete_from_cart(cart_ID):
     query = "UPDATE cart SET Date_of_Delete = %s WHERE  Cart_ID = %s"
