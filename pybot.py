@@ -9,7 +9,7 @@ bot=telegram.Bot(token)
 mydb = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="password",
+        password=password,
         database="deliveryfoodbotdb",
         autocommit=True
         )
@@ -61,8 +61,10 @@ def shopsearch(usermessage,chatid):
     mycursor.execute(query,("%" + usermessage + "%",))
     for result in mycursor.fetchall():
         for n in range(2,5):
-            if (n != 4):
+            if (n == 2):
                 bot.send_message(chatid,result[n])
+            elif (n == 3):
+                bot.send_message(chatid,"Цена товара: " + str(result[n])+" руб.")
             else:
                 good = result[2]
                 keyboard =[[
@@ -74,60 +76,76 @@ def cart(update: Update, context: CallbackContext)-> int:
     chatid =  update.callback_query.message.chat.id
     query_cart = "SELECT * FROM cart WHERE User_ID LIKE %s AND Date_of_Delete is NULL"
     mycursor.execute(query_cart,("%" + str(chatid) + "%",))
-    for result in mycursor.fetchall():
-        for n in range (0,4):
-            if (n==2):
-                bot.send_message(chatid,result[n])
-            if (n==3):
-                cartid = result[0]
-                keyboard =[[
-                    InlineKeyboardButton("Удалить из корзины", callback_data=str(cartid))]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                bot.send_message(chatid,result[n],reply_markup=reply_markup)
+    if mycursor.rowcount:
+        for result in mycursor.fetchall():
+            for n in range (0,5):
+                if (n==2):
+                    bot.send_message(chatid,result[n])
+                if (n==3):
+                    cartid = result[0]
+                    keyboard =[[
+                        InlineKeyboardButton("Удалить из корзины", callback_data=str(cartid))]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    bot.send_message(chatid,"Цена товара: " + str(result[n]) + " руб.",reply_markup=reply_markup)
+    else:
+        bot.send_message(chatid,"Ваша корзина на данный момент пуста")
     
 def order(update, context):
     chatid =  update.callback_query.message.chat.id
-    query_ord = "INSERT INTO orders (ID_User,Ord_Date,Ord_Price) VALUES (%s,%s,%s)"
-    val = (chatid,date.today(),dbworks.summary(chatid))
-    mycursor.execute(query_ord,val)
-    id = mycursor.lastrowid
-    mydb.commit()
-    insprodorder(update,context,id)
-    
-    
+    query = "SELECT cart_ID FROM cart WHERE User_ID LIKE %s AND Date_of_Delete is NULL"
+    mycursor.execute(query,("%" + str(chatid) + "%",))
+    if mycursor.fetchone():
+        query_ord = "INSERT INTO orders (ID_User,Ord_Date,Ord_Price) VALUES (%s,%s,%s)"
+        val = (chatid,date.today(),dbworks.summary(chatid))
+        mycursor.execute(query_ord,val)
+        id = mycursor.lastrowid
+        mydb.commit()
+        insprodorder(update,context,id)
+    else:
+        bot.send_message(chatid,"Ваша корзина на данный момент пуста, оформление заказа невозможно")
+
+        
 def insprodorder(update, context,ordid):
     chatid =  update.callback_query.message.chat.id
     query = "SELECT Cart_ID FROM cart WHERE User_ID LIKE %s AND Date_of_Delete is NULL"
     mycursor.execute(query,("%" + str(chatid) + "%",))
-    #rows = mycursor.fetchall()
     total_rows = int(mycursor.rowcount)
-    queryprod = "select Prod_Name, Prod_Price from cart WHERE User_ID LIKE %s AND Date_of_Delete is NULL"
+    queryprod = "select Prod_Name, Prod_Price, Prod_ID from cart WHERE User_ID LIKE %s AND Date_of_Delete is NULL"
     mycursor.execute(queryprod,("%" + str(chatid) + "%",))
-    names, prices = zip(*mycursor.fetchall())
-    orderid = (ordid,)
+    names, prices,ids = zip(*mycursor.fetchall())
     for i in range(0,total_rows):
-        finquery = "INSERT INTO prod_order (Order_ID) VALUES (%s)"
-        mycursor.execute(finquery,orderid)
+        finquery = "INSERT INTO prod_order (Order_ID,Product_Name,Prod_Price,Prod_ID) VALUES (%s,%s,%s,%s)"
+        val = (ordid,names[i],prices[i],ids[i])
+        mycursor.execute(finquery,val)
         mydb.commit()
-    #valname = [list([item]) for item in names]
-    for n in range(len(names)):
-        print(names[n])
-        namefin = "UPDATE prod_order SET Product_Name = {} WHERE Order_ID = %s",(format(names[n]),ordid)
-        mycursor.execute(*namefin)
-        mydb.commit()
-    #valprice = [list([item]) for item in prices]
-    for n in range(len(prices)):
-        print(prices[n])
-        pricefin = "UPDATE prod_order SET Prod_Price = {} WHERE Order_ID = %s",(format(prices[n]),ordid)
-        mycursor.execute(*pricefin)
-        mydb.commit()
+    mycursor.execute(query,("%" + str(chatid) + "%",))
+    myresult = mycursor.fetchall()
+    for i in myresult:
+        for n in range(0,1):
+            dbworks.delete_from_cart(i[n])
+            mydb.commit()
+    bot.send_message(chatid,"Ваш заказ был оформлен")
     mydb.commit()
         
     
 def history(update: Update, context: CallbackContext):
     chatid =  update.callback_query.message.chat.id
-    print(dbworks.summary(chatid))
-
+    query = "SELECT * FROM orders WHERE ID_User LIKE %s"
+    mycursor.execute(query,("%" + str(chatid) + "%",))
+    if mycursor.rowcount:
+        for result in mycursor.fetchall():
+            for n in range(0,4):
+                if (n==2):
+                    bot.send_message(chatid,str(result[n]))
+                if (n==3):
+                    ordid = result[0]
+                    keyboard =[[
+                    InlineKeyboardButton("Вывести подробности о заказе", callback_data=str(ordid))]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    bot.send_message(chatid,"Цена заказа: " + str(result[n]) + " руб.",reply_markup=reply_markup)
+    else:
+        bot.send_message(chatid,"На данный момент Вами не было оформлено ни одного заказа")
+            
 def listcart(update: Update, context: CallbackContext):
     chatid =  update.callback_query.message.chat.id
     query_cart = "SELECT Cart_ID FROM cart WHERE User_ID LIKE %s AND Date_of_Delete is NULL"
@@ -136,9 +154,18 @@ def listcart(update: Update, context: CallbackContext):
     cartid = [i[0] for i in res_cart]
     return cartid 
 
+def listord(update: Update, context: CallbackContext):
+    chatid =  update.callback_query.message.chat.id
+    query_ord = "SELECT Ord_ID FROM orders WHERE ID_User LIKE %s"
+    mycursor.execute(query_ord,("%" + str(chatid) + "%",))
+    res_ord = mycursor.fetchall()
+    ordid = [i[0] for i in res_ord]
+    return ordid
+    
 def button(update: Update, context: CallbackContext) -> int:
     chatid =  update.callback_query.message.chat.id
     cartid = listcart(update,context)
+    ordid = listord(update,context)
     query = update.callback_query
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
@@ -176,18 +203,17 @@ def button(update: Update, context: CallbackContext) -> int:
         reply_markup=reply_markup)
     if choice in good:
         price = dbworks.show_price(choice)
+        prod_ID = dbworks.show_ID(choice)
         adddate = date.today()
-        dbworks.addtocart(chatid,choice,price,adddate)
+        dbworks.addtocart(chatid,choice,price,adddate,prod_ID)
         x = str(choice) + ' 1 штука добавлена в корзину'
         bot.send_message(chatid,x)
     if choice in str(cartid):
         dbworks.delete_from_cart(choice)
         bot.send_message(chatid,"Товар был удалён из корзины")
+    if choice in str(ordid):
+        dbworks.show_ord(choice,chatid)
         
-def cancel(update, context):
-    update.message.reply_text('canceled')
-    # end of conversation
-    return ConversationHandler.END
 
 def help_command(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Напишите /start, чтобы начать работу с ботом.")
