@@ -25,12 +25,20 @@ res_prod = mycursor.fetchall()
 good = [i[0] for i in res_prod]
 
 logger = logging.getLogger(__name__)
-#PREP,ORDERING = range(2)
+GET_TEXT = range(1)
 #shop, cart, history, order = range(4)
 
 def start(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text('Привет! Тебя приветствует DeliveryFoodMattBot.')
-    dbworks.userins(update, context)
+    update.message.reply_text('Привет! Тебя приветствует DeliveryFoodMattBot. Пожалуйста, предоставь мне свой адрес для доставки, либо напиши /cancel, если адрес уже указан и его менять не требуется')
+    return GET_TEXT
+
+def get_text(update,context):
+    useraddress = update.message.text
+    dbworks.userins(update,context)
+    dbworks.insaddress(update,context,useraddress)
+    mainmenu(update,context)
+    
+def mainmenu(update: Update, context: CallbackContext) -> int:
     keyboard = [
         [
             InlineKeyboardButton("Перейти в магазин", callback_data=str(shop))],
@@ -43,6 +51,7 @@ def start(update: Update, context: CallbackContext) -> int:
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     update.message.reply_text('Главное меню:', reply_markup=reply_markup)
+
 def shop(update: Update, context: CallbackContext)-> int:
     query = update.callback_query
     keyboard=[[InlineKeyboardButton('Бакалея',callback_data='Бакалея')],
@@ -216,30 +225,29 @@ def button(update: Update, context: CallbackContext) -> int:
         
 
 def help_command(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text("Напишите /start, чтобы начать работу с ботом.")
+    update.message.reply_text("Напишите /start, чтобы начать работу с ботом, если адрес менять не требуется, напишите /cancel.")
 
+def cancel(bot, update):
+    return ConversationHandler.END
 
 def main():
     # Create the Updater and pass it your bot's token.
-    updater = Updater(Token)
+    updater = Updater(token)
 
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
     updater.dispatcher.add_handler(CommandHandler('help', help_command))
-    #updater.dispatcher.add_handler((MessageHandler(Filters.text, get_text)))
+    updater.dispatcher.add_handler((MessageHandler(Filters.text, get_text)))
     #updater.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, updater))
-    #conv_handler = ConversationHandler(
-      #entry_points=[CommandHandler('start', start)],
-      #states={
-             #PREP: [CommandHandler('order',order)],
-             #ORDERING: [
-           #CommandHandler('cancel', cancel),  # has to be before MessageHandler to catch `/cancel` as command, not as `text`
-           #MessageHandler(Filters.text, get_text)],
-           #},
-        #fallbacks=[CommandHandler('cancel', cancel)],
-    #)
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={GET_TEXT: [
+            MessageHandler(Filters.text, get_text)],
+                },
+        fallbacks=[CommandHandler('cancel', cancel)],
+        )
 
-    #updater.dispatcher.add_handler(conv_handler)
+    updater.dispatcher.add_handler(conv_handler)
     
     # Start the Bot
     updater.start_polling()
