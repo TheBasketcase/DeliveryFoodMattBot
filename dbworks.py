@@ -13,7 +13,7 @@ mydb = mysql.connector.connect(
         autocommit=True
         )
 mycursor = mydb.cursor()
-updater = Updater(Token)
+updater = Updater(token)
 
 def userins(update,context):
     usID = update.message.from_user.id
@@ -23,7 +23,20 @@ def userins(update,context):
     mycursor.execute(sql, val)
     mydb.commit()
     print(mycursor.rowcount, "record(s) has been inserted.")
-                    
+
+def insaddress(update,context,address):
+    usID = update.message.from_user.id
+    if (address != "/cancel"):
+        sql = "UPDATE users SET address = %s WHERE User_ID = %s"
+        data = (address,usID)
+        mycursor.execute(sql,data)
+        mydb.commit()
+    query = "SELECT address from users WHERE User_ID LIKE %s"
+    mycursor.execute(query,("%" + str(usID) + "%",))
+    result = mycursor.fetchone()
+    curaddress = result[0]
+    bot.send_message(usID,"Ваш адрес на данный момент: " + curaddress)
+
 def addtocart(id,good,price,adddate,prod_ID):
     query = "INSERT INTO cart (User_ID,Prod_Name,Prod_Price,Date_of_Add,Prod_ID) VALUES (%s,%s,%s,%s,%s)"
     val = (id,good,price,adddate,prod_ID)
